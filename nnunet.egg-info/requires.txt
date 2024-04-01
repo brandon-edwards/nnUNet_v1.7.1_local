@@ -1,0 +1,15 @@
+SimpleITK
+batchgenerators>=0.23
+dicom2nifti
+matplotlib
+medpy
+nibabel
+numpy
+pandas
+requests
+scikit-image>=0.14
+scikit-learn
+scipy
+tifffile
+torch>1.10.0
+tqdm
