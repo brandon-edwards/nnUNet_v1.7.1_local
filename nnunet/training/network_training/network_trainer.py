@@ -411,7 +411,7 @@ class NetworkTrainer(object):
         """
         pass
 
-    def run_training(self):
+    def run_training(self, train_cutoff, val_cutoff):
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
 
@@ -434,9 +434,14 @@ class NetworkTrainer(object):
         if not self.was_initialized:
             self.initialize(True)
 
+        #initializing batches applited to training and val
+        batches_applied_train = 0
+        batches_applied_val = 0
+
         while self.epoch < self.max_num_epochs:
             self.print_to_log_file("\nepoch: ", self.epoch)
             epoch_start_time = time()
+            train_loop_start_time = time()
             train_losses_epoch = []
 
             # train one epoch
@@ -451,14 +456,24 @@ class NetworkTrainer(object):
 
                         tbar.set_postfix(loss=l)
                         train_losses_epoch.append(l)
+                        batches_applied_train += 1
+                        train_loop_time = time() - train_loop_start_time
+                        if train_loop_time > train_cutoff:
+                            self.print_to_log_file(f"Cutting off train loop after {batches_applied_train} batches of the {self.num_batches_per_epoch} normally applied for training."
+                            break
             else:
                 for _ in range(self.num_batches_per_epoch):
                     l = self.run_iteration(self.tr_gen, True)
                     train_losses_epoch.append(l)
-
+                    batches_applied_train += 1
+                    train_loop_time = time() - train_loop_start_time
+                    if train_loop_time > train_cutoff:
+                        self.print_to_log_file(f"Cutting off train loop after {batches_applied_train} batches of the {num_batches_per_epoch} batches normally applied for training."
+                        break
             self.all_tr_losses.append(np.mean(train_losses_epoch))
             self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
 
+            val_loop_start_time = time()
             with torch.no_grad():
                 # validation with train=False
                 self.network.eval()
@@ -466,10 +481,15 @@ class NetworkTrainer(object):
                 for b in range(self.num_val_batches_per_epoch):
                     l = self.run_iteration(self.val_gen, False, True)
                     val_losses.append(l)
+                    batches_applied_val += 1
+                    val_loop_time = time() = val_loop_start_time
+                    if val_loop_start_time > val_cutoff:
+                        self.print_to_log_file(f"Cutting off val loop after {batches_applied_val} batches of the {self.num_val_batches_per_epoch} normally applied to val."
                 self.all_val_losses.append(np.mean(val_losses))
                 self.print_to_log_file("validation loss: %.4f" % self.all_val_losses[-1])
 
                 if self.also_val_in_tr_mode:
+                    raise ValueError(f"PostOpp experiment not currently supporting also_val_in_tr_mode.")
                     self.network.train()
                     # validation with train=True
                     val_losses = []
@@ -500,6 +520,8 @@ class NetworkTrainer(object):
             os.remove(join(self.output_folder, "model_latest.model"))
         if isfile(join(self.output_folder, "model_latest.model.pkl")):
             os.remove(join(self.output_folder, "model_latest.model.pkl"))
+
+        return batches_applied_train, batches_applied_val
 
     def maybe_update_lr(self):
         # maybe update learning rate
