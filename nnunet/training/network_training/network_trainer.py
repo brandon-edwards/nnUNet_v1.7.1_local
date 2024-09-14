@@ -459,10 +459,9 @@ class NetworkTrainer(object):
                         batches_applied_train += 1
                         train_loop_time = time() - train_loop_start_time
                         if train_loop_time > train_cutoff:
-                            break
-                        # if train_loop_time > train_cutoff:
-                            # self.print_to_log_file("Cutting off train loop after {} batches of the {} normally applied for training.".format(batches_applied_train, self.num_batches_per_epoch))
-                          #  break
+                    if train_loop_time > train_cutoff:
+                        self.print_to_log_file(f"Cutting off train loop after {batches_applied_train} batches of the {num_batches_per_epoch} batches normally applited for training.")
+                        break
             else:
                 for _ in range(self.num_batches_per_epoch):
                     l = self.run_iteration(self.tr_gen, True)
