@@ -469,7 +469,7 @@ class NetworkTrainer(object):
                     batches_applied_train += 1
                     train_loop_time = time() - train_loop_start_time
                     if train_loop_time > train_cutoff:
-                        self.print_to_log_file(f"Cutting off train loop after {batches_applied_train} batches of the {num_batches_per_epoch} batches normally applited for training.")
+                        self.print_to_log_file(f"Cutting off train loop after {batches_applied_train} batches of {num_batches_per_epoch}, with train_loop_time of {train_loop_time} and train_cutoff of {train_cutoff}.")
                         break
             self.all_tr_losses.append(np.mean(train_losses_epoch))
             self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
@@ -485,7 +485,7 @@ class NetworkTrainer(object):
                     batches_applied_val += 1
                     val_loop_time = time() - val_loop_start_time
                     if val_loop_time > val_cutoff:
-                        self.print_to_log_file(f"Cutting off val loop after {batches_applied_val} batches of the {self.num_val_batches_per_epoch} normally applied to val.")
+                        self.print_to_log_file(f"Cutting off val loop after {batches_applied_val} batches of {self.num_val_batches_per_epoch}, val_loop_time is {val_loop_time} and val_cutoff is {val_cutoff}.")
                         break
                 self.all_val_losses.append(np.mean(val_losses))
                 self.print_to_log_file("validation loss: %.4f" % self.all_val_losses[-1])
