@@ -41,11 +41,13 @@ class nnUNetTrainerV2(nnUNetTrainer):
     Info for Fabian: same as internal nnUNetTrainerV2_2
     """
 
-    def __init__(self, plans_file, fold, max_num_epochs, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
+    def __init__(self, plans_file, fold, TOTAL_max_num_epochs, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
                  unpack_data=True, deterministic=True, fp16=False):
         super().__init__(plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
                          deterministic, fp16)
-        self.max_num_epochs = max_num_epochs
+        self.TOTAL_max_num_epochs = TOTAL_max_num_epochs
+        # below ensures we don't sue this attribute for epoch comparisons without intentionally setting it
+        self.max_num_epochs = None
         self.initial_lr = 1e-2
         self.deep_supervision_scales = None
         self.ds_loss_weights = None
@@ -402,7 +404,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
             ep = self.epoch + 1
         else:
             ep = epoch
-        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, 1000.0, self.initial_lr, 0.9)
+        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, self.TOTAL_max_num_epochs, self.initial_lr, 0.9)
         self.print_to_log_file("lr:", np.round(self.optimizer.param_groups[0]['lr'], decimals=6))
 
     def on_epoch_end(self):
