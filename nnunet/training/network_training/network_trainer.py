@@ -452,7 +452,7 @@ class NetworkTrainer(object):
                     for b in tbar:
                         tbar.set_description("Epoch {}/{}".format(self.epoch+1, self.max_num_epochs))
 
-                         train_loop_time = time() - train_loop_start_time
+                        train_loop_time = time() - train_loop_start_time
                         if train_loop_time > train_cutoff:
                             self.print_to_log_file(f"Cutting off train loop after {batches_applied_train} batches of the {self.num_batches_per_epoch}, with train_loop_time of {train_loop_time} and train_cutoff of {train_cutoff}.")
                             break
@@ -486,7 +486,7 @@ class NetworkTrainer(object):
                     if val_loop_time > val_cutoff:
                         self.print_to_log_file(f"Cutting off val loop after {batches_applied_val} batches of {self.num_val_batches_per_epoch}, val_loop_time is {val_loop_time} and val_cutoff is {val_cutoff}.")
                         break
-                    
+
                     l = self.run_iteration(self.val_gen, False, True)
                     val_losses.append(l)
                     batches_applied_val += 1
@@ -495,7 +495,7 @@ class NetworkTrainer(object):
                 self.print_to_log_file("validation loss: %.4f" % self.all_val_losses[-1])
 
                 if self.also_val_in_tr_mode:
-                    raise ValueError(f"PostOpp experiment not currently supporting also_val_in_tr_mode.")
+                    raise ValueError(f"PostOpp experiment (for which this module is exclusively patched) not currently supporting also_val_in_tr_mode.")
                     self.network.train()
                     # validation with train=True
                     val_losses = []
