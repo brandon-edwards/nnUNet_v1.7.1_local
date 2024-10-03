@@ -411,7 +411,11 @@ class NetworkTrainer(object):
         """
         pass
 
-    def run_training(self, train_cutoff, val_cutoff):
+    def run_training(self, train_cutoff, val_cutoff, decrement_current_epoch_by_one):
+        # train_cutoff and val_cutoff are given in seconds, at the begining of train and val batch iteration
+        # respecively a time check is made against this cutoff to determine whether the loop will be exited early
+        # decrement_current_epoch_by_one is a boolean that reduced the trainer.epoch value by one before checkpoint saving
+        # to offset the increment by one otherwise in the function, and is used in validation only scenario
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
 
@@ -519,6 +523,9 @@ class NetworkTrainer(object):
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
         self.epoch -= 1  # if we don't do this we can get a problem with loading model_final_checkpoint.
+
+        if decrement_current_epoch_by_one:
+            self.epoch -= 1
 
         if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"))
         # now we can delete latest as it will be identical with final
