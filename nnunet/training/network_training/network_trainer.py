@@ -199,7 +199,7 @@ class NetworkTrainer(object):
             ax = fig.add_subplot(111)
             ax2 = ax.twinx()
 
-            print(f"Brandon DEBUG, trying to plot at epochs {list(range(self.epoch + 1))} and all_tr_losses:{all_tr_losses} and all_val_losses:{all_val_losses}}")
+            print(f"Brandon DEBUG, trying to plot at epochs {list(range(self.epoch + 1))} and all_tr_losses:{all_tr_losses} and all_val_losses:{all_val_losses}")
 
             x_values = list(range(self.epoch + 1))
 
