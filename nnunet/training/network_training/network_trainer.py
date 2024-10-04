@@ -442,6 +442,8 @@ class NetworkTrainer(object):
         batches_applied_train = 0
         batches_applied_val = 0
 
+        print(f"Brandon DEBUG - starting train/val loop with self.epoch: {self.epoch} and self.max_num_epochs: {self.max_num_epochs}")
+
         while self.epoch < self.max_num_epochs:
             self.print_to_log_file("\nepoch: ", self.epoch)
             epoch_start_time = time()
