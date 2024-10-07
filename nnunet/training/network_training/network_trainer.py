@@ -189,39 +189,49 @@ class NetworkTrainer(object):
         Should probably by improved
         :return:
         """
-        try:
-            font = {'weight': 'normal',
-                    'size': 18}
 
-            matplotlib.rc('font', **font)
+         print(f"Brandon DEBUG, potential plot across epochs {list(range(self.epoch + 1))} and all_tr_losses:{self.all_tr_losses} and all_val_losses:{self.all_val_losses} and all_val_eval_metrics:{self.all_val_eval_metrics}")
 
-            fig = plt.figure(figsize=(30, 24))
-            ax = fig.add_subplot(111)
-            ax2 = ax.twinx()
 
-            print(f"Brandon DEBUG, trying to plot at epochs {list(range(self.epoch + 1))} and all_tr_losses:{self.all_tr_losses} and all_val_losses:{self.all_val_losses}")
+        # dissabling the logic for intermediate stages where validation has one more result present (global) than training
+        # therefore this progress plots will only occur at the point where checkpoint is filled with most recent train and local val
+        # results. Global val will never appear in these plots.
 
-            x_values = list(range(self.epoch + 1))
+        if (self.epoch + 1 == len(self.all_tr_losses)) and (self.epoch + 1 == len(self.all_val_eval_metrics)) and (self.epoch + 1 == len(self.all_val_losses)):
+            print(f"Brandon DEUB -")
 
-            ax.plot(x_values, self.all_tr_losses, color='b', ls='-', label="loss_tr")
+            try:
+                font = {'weight': 'normal',
+                        'size': 18}
 
-            ax.plot(x_values, self.all_val_losses, color='r', ls='-', label="loss_val, train=False")
+                matplotlib.rc('font', **font)
 
-            if len(self.all_val_losses_tr_mode) > 0:
-                ax.plot(x_values, self.all_val_losses_tr_mode, color='g', ls='-', label="loss_val, train=True")
-            if len(self.all_val_eval_metrics) == len(x_values):
-                ax2.plot(x_values, self.all_val_eval_metrics, color='g', ls='--', label="evaluation metric")
+                fig = plt.figure(figsize=(30, 24))
+                ax = fig.add_subplot(111)
+                ax2 = ax.twinx()
 
-            ax.set_xlabel("epoch")
-            ax.set_ylabel("loss")
-            ax2.set_ylabel("evaluation metric")
-            ax.legend()
-            ax2.legend(loc=9)
+               
+                x_values = list(range(self.epoch + 1))
 
-            fig.savefig(join(self.output_folder, "progress.png"))
-            plt.close()
-        except IOError:
-            self.print_to_log_file("failed to plot: ", sys.exc_info())
+                ax.plot(x_values, self.all_tr_losses, color='b', ls='-', label="loss_tr")
+
+                ax.plot(x_values, self.all_val_losses, color='r', ls='-', label="loss_val, train=False")
+
+                if len(self.all_val_losses_tr_mode) > 0:
+                    ax.plot(x_values, self.all_val_losses_tr_mode, color='g', ls='-', label="loss_val, train=True")
+                if len(self.all_val_eval_metrics) == len(x_values):
+                    ax2.plot(x_values, self.all_val_eval_metrics, color='g', ls='--', label="evaluation metric")
+
+                ax.set_xlabel("epoch")
+                ax.set_ylabel("loss")
+                ax2.set_ylabel("evaluation metric")
+                ax.legend()
+                ax2.legend(loc=9)
+
+                fig.savefig(join(self.output_folder, "progress.png"))
+                plt.close()
+            except IOError:
+                self.print_to_log_file("failed to plot: ", sys.exc_info())
 
     def print_to_log_file(self, *args, also_print_to_console=True, add_timestamp=True):
 
