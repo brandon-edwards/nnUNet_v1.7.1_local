@@ -483,9 +483,9 @@ class NetworkTrainer(object):
                     l = self.run_iteration(self.tr_gen, True)
                     train_losses_epoch.append(l)
                     batches_applied_train += 1
-                    
-            self.all_tr_losses.append(np.mean(train_losses_epoch))
-            self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
+            if len(train_losses_epoch) > 0:        
+                self.all_tr_losses.append(np.mean(train_losses_epoch))
+                self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
 
             val_loop_start_time = time()
             with torch.no_grad():
@@ -501,12 +501,13 @@ class NetworkTrainer(object):
                     l = self.run_iteration(self.val_gen, False, True)
                     val_losses.append(l)
                     batches_applied_val += 1
-                    
-                self.all_val_losses.append(np.mean(val_losses))
-                self.print_to_log_file("validation loss: %.4f" % self.all_val_losses[-1])
+                if len(val_losses) > 0:    
+                    self.all_val_losses.append(np.mean(val_losses))
+                    self.print_to_log_file("validation loss: %.4f" % self.all_val_losses[-1])
 
                 if self.also_val_in_tr_mode:
                     raise ValueError(f"PostOpp experiment (for which this module is exclusively patched) not currently supporting also_val_in_tr_mode.")
+                    """
                     self.network.train()
                     # validation with train=True
                     val_losses = []
@@ -515,7 +516,7 @@ class NetworkTrainer(object):
                         val_losses.append(l)
                     self.all_val_losses_tr_mode.append(np.mean(val_losses))
                     self.print_to_log_file("validation loss (train=True): %.4f" % self.all_val_losses_tr_mode[-1])
-
+                    """
             self.update_train_loss_MA()  # needed for lr scheduler and stopping of training
 
             continue_training = self.on_epoch_end(val_epoch=val_epoch)
