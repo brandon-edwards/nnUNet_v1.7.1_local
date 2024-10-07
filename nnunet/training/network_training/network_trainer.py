@@ -459,6 +459,7 @@ class NetworkTrainer(object):
 
         print(f"Brandon DEBUG - starting train/val loop with self.epoch: {self.epoch} and self.max_num_epochs: {self.max_num_epochs}")
 
+        # we break this while loop at the end if val_epoch
         while self.epoch < self.max_num_epochs:
             self.print_to_log_file("\nepoch: ", self.epoch)
             epoch_start_time = time()
@@ -538,6 +539,9 @@ class NetworkTrainer(object):
                 break
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
+
+            if val_epoch:
+                break
 
         if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), val_epoch=val_epoch)
         # now we can delete latest as it will be identical with final
