@@ -540,6 +540,7 @@ class NetworkTrainer(object):
                     """
             self.update_train_loss_MA()  # needed for lr scheduler and stopping of training
 
+            # We don't sue continue_training, as this is not a loop any more
             continue_training = self.on_epoch_end(val_epoch=val_epoch)
 
             # above stored to self.val_eval_metrics if val_epoch
@@ -551,9 +552,11 @@ class NetworkTrainer(object):
 
             epoch_end_time = time()
 
+            """
             if not continue_training:
                 # allows for early stopping
                 break
+            """
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
