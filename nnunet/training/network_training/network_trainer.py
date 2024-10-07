@@ -190,7 +190,7 @@ class NetworkTrainer(object):
         :return:
         """
 
-         print(f"Brandon DEBUG, potential plot across epochs {list(range(self.epoch + 1))} and all_tr_losses:{self.all_tr_losses} and all_val_losses:{self.all_val_losses} and all_val_eval_metrics:{self.all_val_eval_metrics}")
+        print(f"Brandon DEBUG, potential plot across epochs {list(range(self.epoch + 1))} and all_tr_losses:{self.all_tr_losses} and all_val_losses:{self.all_val_losses} and all_val_eval_metrics:{self.all_val_eval_metrics}")
 
 
         # dissabling the logic for intermediate stages where validation has one more result present (global) than training
@@ -198,7 +198,7 @@ class NetworkTrainer(object):
         # results. Global val will never appear in these plots.
 
         if (self.epoch + 1 == len(self.all_tr_losses)) and (self.epoch + 1 == len(self.all_val_eval_metrics)) and (self.epoch + 1 == len(self.all_val_losses)):
-            print(f"Brandon DEUB -")
+            print(f"Brandon DEBUG - Satisfied length equality in self.all_tr_losses, self.all_val_eval_metrics, self.all_val_losses, and list(range(self.epoch + 1)) with value:{self.epoch+1}")
 
             try:
                 font = {'weight': 'normal',
