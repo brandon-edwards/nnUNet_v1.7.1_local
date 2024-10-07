@@ -528,9 +528,6 @@ class NetworkTrainer(object):
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
-        if decrement_current_epoch_by_one:
-            self.epoch -= 1
-
         if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), val_epoch=val_epoch)
         # now we can delete latest as it will be identical with final
         if isfile(join(self.output_folder, "model_latest.model")):
