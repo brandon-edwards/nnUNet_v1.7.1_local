@@ -313,9 +313,9 @@ class nnUNetTrainer(NetworkTrainer):
 
         shutil.copy(self.plans_file, join(self.output_folder_base, "plans.pkl"))
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_results_to_checkpoint):
         self.save_debug_information()
-        return super(nnUNetTrainer, self).run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch)
+        return super(nnUNetTrainer, self).run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, val_results_to_checkpoint=val_results_to_checkpoint)
 
     def load_plans_file(self):
         """

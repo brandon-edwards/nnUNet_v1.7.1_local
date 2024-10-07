@@ -427,7 +427,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
                                        "0.95 and network weights have been reinitialized")
         return continue_training
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_results_to_checkpoint):
         """
         if we run with -c then we need to set the correct lr for the first epoch, otherwise it will run the first
         continued epoch with self.initial_lr
@@ -439,6 +439,6 @@ class nnUNetTrainerV2(nnUNetTrainer):
         # want at the start of the training
         ds = self.network.do_ds
         self.network.do_ds = True
-        ret = super().run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch)
+        ret = super().run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, val_results_to_checkpoint=val_results_to_checkpoint)
         self.network.do_ds = ds
         return ret

@@ -289,14 +289,16 @@ class NetworkTrainer(object):
             this_epoch = self.epoch
         else:
             this_epoch = self.epoch + 1
+
         save_this = {
-            'epoch': this_epoch,
+            'epoch': self.epoch,
             'state_dict': state_dict,
             'optimizer_state_dict': optimizer_state_dict,
             'lr_scheduler_state_dict': lr_sched_state_dct,
             'plot_stuff': (self.all_tr_losses, self.all_val_losses, self.all_val_losses_tr_mode,
-                           self.all_val_eval_metrics),
+                        self.all_val_eval_metrics),
             'best_stuff' : (self.best_epoch_based_on_MA_tr_loss, self.best_MA_tr_loss_for_patience, self.best_val_eval_criterion_MA)}
+
         if self.amp_grad_scaler is not None:
             save_this['amp_grad_scaler'] = self.amp_grad_scaler.state_dict()
 
@@ -427,10 +429,12 @@ class NetworkTrainer(object):
         """
         pass
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_result_to_checkpoint):
         # train_cutoff and val_cutoff are given in seconds, at the begining of train and val batch iteration
         # respecively a time check is made against this cutoff to determine whether the loop will be exited early
         # val_epoch is a boolean that indicates a validation only scenario (don't increment epoch)
+        # val_result_to_checkpoint is used to control global val not being recorded in checkpoint (primarily motivated by
+        # wanting one validation list in checkpoint - following NNUnet code to avoid conflicts)
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
 
@@ -459,12 +463,15 @@ class NetworkTrainer(object):
 
         print(f"Brandon DEBUG - starting train/val loop with self.epoch: {self.epoch} and self.max_num_epochs: {self.max_num_epochs}")
 
-        # we break this while loop at the end if val_epoch
-        while self.epoch < self.max_num_epochs:
+        # Changed below to run always one epoch 
+        if True: # previously was if current epoch is less than total epochs
             self.print_to_log_file("\nepoch: ", self.epoch)
             epoch_start_time = time()
             train_loop_start_time = time()
             train_losses_epoch = []
+            this_ave_train_loss = None
+            this_ave_val_loss = None
+            this_val_eval_metrics = None
 
             # train one epoch
             self.network.train()
@@ -497,6 +504,7 @@ class NetworkTrainer(object):
             if len(train_losses_epoch) > 0:        
                 self.all_tr_losses.append(np.mean(train_losses_epoch))
                 self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
+                this_ave_train_loss = self.all_tr_losses[-1]
 
             val_loop_start_time = time()
             with torch.no_grad():
@@ -512,9 +520,11 @@ class NetworkTrainer(object):
                     l = self.run_iteration(self.val_gen, False, True)
                     val_losses.append(l)
                     batches_applied_val += 1
-                if len(val_losses) > 0:    
-                    self.all_val_losses.append(np.mean(val_losses))
-                    self.print_to_log_file("validation loss: %.4f" % self.all_val_losses[-1])
+                if len(val_losses) > 0:  
+                    this_ave_val_loss = np.mean(val_losses)
+                    if val_result_to_checkpoint:
+                        self.all_val_losses.append(this_ave_val_loss)
+                    self.print_to_log_file("validation loss: %.4f" % this_ave_val_loss)
 
                 if self.also_val_in_tr_mode:
                     raise ValueError(f"PostOpp experiment (for which this module is exclusively patched) not currently supporting also_val_in_tr_mode.")
@@ -532,6 +542,13 @@ class NetworkTrainer(object):
 
             continue_training = self.on_epoch_end(val_epoch=val_epoch)
 
+            # above stored to self.val_eval_metrics if val_epoch
+            # pulling these off if not intended to go into checkpoint
+            if val_epoch:
+                this_val_eval_metrics = self.val_eval_metrics[-1]
+                if not val_results_to_checkpoint:
+                    self.val_eval_metrics = self.val_eval_metrics[:-1]
+
             epoch_end_time = time()
 
             if not continue_training:
@@ -540,9 +557,6 @@ class NetworkTrainer(object):
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
-            if val_epoch:
-                break
-
         if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), val_epoch=val_epoch)
         # now we can delete latest as it will be identical with final
         if isfile(join(self.output_folder, "model_latest.model")):
@@ -550,7 +564,7 @@ class NetworkTrainer(object):
         if isfile(join(self.output_folder, "model_latest.model.pkl")):
             os.remove(join(self.output_folder, "model_latest.model.pkl"))
 
-        return batches_applied_train, batches_applied_val
+        return batches_applied_train, batches_applied_val, this_ave_train_loss, this_ave_val_loss, this_val_eval_metrics
 
     def maybe_update_lr(self):
         # maybe update learning rate
@@ -653,8 +667,9 @@ class NetworkTrainer(object):
 
         return continue_training
 
-    def on_epoch_end(self, val_epoch=False):
-        self.finish_online_evaluation()  # does not have to do anything, but can be used to update self.all_val_eval_
+    def on_epoch_end(self, val_epoch):
+        if val_epoch:
+            self.finish_online_evaluation()  # does not have to do anything, but can be used to update self.all_val_eval_
         # metrics
 
         self.plot_progress()
