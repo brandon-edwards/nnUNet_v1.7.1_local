@@ -429,11 +429,11 @@ class NetworkTrainer(object):
         """
         pass
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_result_to_checkpoint):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_results_to_checkpoint):
         # train_cutoff and val_cutoff are given in seconds, at the begining of train and val batch iteration
         # respecively a time check is made against this cutoff to determine whether the loop will be exited early
         # val_epoch is a boolean that indicates a validation only scenario (don't increment epoch)
-        # val_result_to_checkpoint is used to control global val not being recorded in checkpoint (primarily motivated by
+        # val_results_to_checkpoint is used to control global val not being recorded in checkpoint (primarily motivated by
         # wanting one validation list in checkpoint - following NNUnet code to avoid conflicts)
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
@@ -522,7 +522,7 @@ class NetworkTrainer(object):
                     batches_applied_val += 1
                 if len(val_losses) > 0:  
                     this_ave_val_loss = np.mean(val_losses)
-                    if val_result_to_checkpoint:
+                    if val_results_to_checkpoint:
                         self.all_val_losses.append(this_ave_val_loss)
                     self.print_to_log_file("validation loss: %.4f" % this_ave_val_loss)
 
