@@ -724,7 +724,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.online_eval_fn = []
 
     def save_checkpoint(self, fname, save_optimizer=True, train_epoch=True):
-        super(nnUNetTrainer, self).save_checkpoint(fname, save_optimizer, train_epoch=train_epoch)
+        super(nnUNetTrainer, self).save_checkpoint(fname, save_optimizer=save_optimizer, train_epoch=train_epoch)
         info = OrderedDict()
         info['init'] = self.init_args
         info['name'] = self.__class__.__name__
