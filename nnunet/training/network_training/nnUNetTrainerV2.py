@@ -407,12 +407,12 @@ class nnUNetTrainerV2(nnUNetTrainer):
         self.optimizer.param_groups[0]['lr'] = poly_lr(ep, self.TOTAL_max_num_epochs, self.initial_lr, 0.9)
         self.print_to_log_file("lr:", np.round(self.optimizer.param_groups[0]['lr'], decimals=6))
 
-    def on_epoch_end(self, val_epoch):
+    def on_epoch_end(self, val_epoch, train_epoch):
         """
         overwrite patient-based early stopping. Always run to 1000 epochs
         :return:
         """
-        super().on_epoch_end(val_epoch=val_epoch)
+        super().on_epoch_end(val_epoch=val_epoch, train_epoch=train_epoch)
         continue_training = self.epoch < self.max_num_epochs
 
         # it can rarely happen that the momentum of nnUNetTrainerV2 is too high for some dataset. If at epoch 100 the
@@ -427,7 +427,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
                                        "0.95 and network weights have been reinitialized")
         return continue_training
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_results_to_checkpoint):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch):
         """
         if we run with -c then we need to set the correct lr for the first epoch, otherwise it will run the first
         continued epoch with self.initial_lr
@@ -439,6 +439,6 @@ class nnUNetTrainerV2(nnUNetTrainer):
         # want at the start of the training
         ds = self.network.do_ds
         self.network.do_ds = True
-        ret = super().run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, val_results_to_checkpoint=val_results_to_checkpoint)
+        ret = super().run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, train_epoch=train_epoch)
         self.network.do_ds = ds
         return ret

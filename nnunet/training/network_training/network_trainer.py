@@ -267,7 +267,7 @@ class NetworkTrainer(object):
         if also_print_to_console:
             print(*args)
 
-    def save_checkpoint(self, fname, save_optimizer=True, val_epoch=False):
+    def save_checkpoint(self, fname, train_epoch=True, save_optimizer=True):
         start_time = time()
         state_dict = self.network.state_dict()
         for key in state_dict.keys():
@@ -285,10 +285,10 @@ class NetworkTrainer(object):
             optimizer_state_dict = None
 
         self.print_to_log_file(f"saving checkpoint to {fname}...")
-        if val_epoch:
-            this_epoch = self.epoch
-        else:
+        if train_epoch:
             this_epoch = self.epoch + 1
+        else:
+            this_epoch = self.epoch
 
         save_this = {
             'epoch': self.epoch,
@@ -429,11 +429,12 @@ class NetworkTrainer(object):
         """
         pass
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_results_to_checkpoint):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch):
         # train_cutoff and val_cutoff are given in seconds, at the begining of train and val batch iteration
         # respecively a time check is made against this cutoff to determine whether the loop will be exited early
-        # val_epoch is a boolean that indicates a validation only scenario (don't increment epoch)
-        # val_results_to_checkpoint is used to control global val not being recorded in checkpoint (primarily motivated by
+        # val_epoch is a boolean that indicates a validation scenario
+        # train_epoch is a boolean that indicates training happening too
+        # when trian epoch is true, we will record val in checkpoint, not otherwise (primarily motivated by
         # wanting one validation list in checkpoint - following NNUnet code to avoid conflicts)
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
@@ -522,7 +523,7 @@ class NetworkTrainer(object):
                     batches_applied_val += 1
                 if len(val_losses) > 0:  
                     this_ave_val_loss = np.mean(val_losses)
-                    if val_results_to_checkpoint:
+                    if train_epoch:
                         self.all_val_losses.append(this_ave_val_loss)
                     self.print_to_log_file("validation loss: %.4f" % this_ave_val_loss)
 
@@ -540,14 +541,13 @@ class NetworkTrainer(object):
                     """
             self.update_train_loss_MA()  # needed for lr scheduler and stopping of training
 
-            # We don't sue continue_training, as this is not a loop any more
+            # We don't use continue_training, as this is not a loop any more
             continue_training = self.on_epoch_end(val_epoch=val_epoch)
 
-            # above stored to self.all_val_eval_metrics if val_epoch
-            # pulling these off if not intended to go into checkpoint
+             # pulling off val results if validated but didn't train (global val) so won't go into checkpoint
             if val_epoch:
                 this_val_eval_metrics = self.all_val_eval_metrics[-1]
-                if not val_results_to_checkpoint:
+                if not train_epoch:
                     self.all_val_eval_metrics = self.all_val_eval_metrics[:-1]
 
             epoch_end_time = time()
@@ -560,7 +560,7 @@ class NetworkTrainer(object):
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
-        if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), val_epoch=val_epoch)
+        if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), train_epoch=train_epoch)
         # now we can delete latest as it will be identical with final
         if isfile(join(self.output_folder, "model_latest.model")):
             os.remove(join(self.output_folder, "model_latest.model"))
@@ -670,14 +670,14 @@ class NetworkTrainer(object):
 
         return continue_training
 
-    def on_epoch_end(self, val_epoch):
+    def on_epoch_end(self, val_epoch, train_epoch):
         if val_epoch:
             self.finish_online_evaluation()  # does not have to do anything, but can be used to update self.all_val_eval_
         # metrics
 
         self.plot_progress()
 
-        if not val_epoch:
+        if train_epoch:
             self.maybe_update_lr()
         # this is not the final checkpoint saving, so no need to watch out for an epoch increase in the val case for PostOpp federation
         self.maybe_save_checkpoint()

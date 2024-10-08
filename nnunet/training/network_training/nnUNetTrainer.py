@@ -313,9 +313,9 @@ class nnUNetTrainer(NetworkTrainer):
 
         shutil.copy(self.plans_file, join(self.output_folder_base, "plans.pkl"))
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch, val_results_to_checkpoint):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch):
         self.save_debug_information()
-        return super(nnUNetTrainer, self).run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, val_results_to_checkpoint=val_results_to_checkpoint)
+        return super(nnUNetTrainer, self).run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, train_epoch=train_epoch)
 
     def load_plans_file(self):
         """
@@ -723,8 +723,8 @@ class nnUNetTrainer(NetworkTrainer):
         self.online_eval_fp = []
         self.online_eval_fn = []
 
-    def save_checkpoint(self, fname, save_optimizer=True, val_epoch=False):
-        super(nnUNetTrainer, self).save_checkpoint(fname, save_optimizer, val_epoch=val_epoch)
+    def save_checkpoint(self, fname, save_optimizer=True, train_epoch=True):
+        super(nnUNetTrainer, self).save_checkpoint(fname, save_optimizer, train_epoch=train_epoch)
         info = OrderedDict()
         info['init'] = self.init_args
         info['name'] = self.__class__.__name__
