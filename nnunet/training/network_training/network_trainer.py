@@ -543,12 +543,12 @@ class NetworkTrainer(object):
             # We don't sue continue_training, as this is not a loop any more
             continue_training = self.on_epoch_end(val_epoch=val_epoch)
 
-            # above stored to self.val_eval_metrics if val_epoch
+            # above stored to self.all_val_eval_metrics if val_epoch
             # pulling these off if not intended to go into checkpoint
             if val_epoch:
-                this_val_eval_metrics = self.val_eval_metrics[-1]
+                this_val_eval_metrics = self.all_val_eval_metrics[-1]
                 if not val_results_to_checkpoint:
-                    self.val_eval_metrics = self.val_eval_metrics[:-1]
+                    self.all_val_eval_metrics = self.all_val_eval_metrics[:-1]
 
             epoch_end_time = time()
 
