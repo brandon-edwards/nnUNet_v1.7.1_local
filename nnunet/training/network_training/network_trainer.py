@@ -542,7 +542,7 @@ class NetworkTrainer(object):
             self.update_train_loss_MA()  # needed for lr scheduler and stopping of training
 
             # We don't use continue_training, as this is not a loop any more
-            continue_training = self.on_epoch_end(val_epoch=val_epoch)
+            continue_training = self.on_epoch_end(val_epoch=val_epoch, train_epoch=train_epoch)
 
              # pulling off val results if validated but didn't train (global val) so won't go into checkpoint
             if val_epoch:
