@@ -462,7 +462,7 @@ class NetworkTrainer(object):
         batches_applied_train = 0
         batches_applied_val = 0
 
-        print(f"Brandon DEBUG - starting train/val loop with self.epoch: {self.epoch} and self.max_num_epochs: {self.max_num_epochs}")
+        # print(f"Brandon DEBUG - starting train/val loop with self.epoch: {self.epoch} and self.max_num_epochs: {self.max_num_epochs}")
 
         # Changed below to run always one epoch 
         if True: # previously was if current epoch is less than total epochs
