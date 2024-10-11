@@ -409,8 +409,7 @@ class NetworkTrainer(object):
 
         # load best loss (if present)
         if 'best_stuff' in checkpoint.keys():
-            self.best_epoch_based_on_MA_tr_loss, self.best_MA_tr_loss_for_patience, self.best_val_eval_criterion_MA = checkpoint[, self.all_val_eval_metrics
-                'best_stuff']
+            self.best_epoch_based_on_MA_tr_loss, self.best_MA_tr_loss_for_patience, self.best_val_eval_criterion_MA = checkpoint['best_stuff']
 
         # after the training is done, the epoch is incremented one more time in my old code. This results in
         # self.epoch = 1001 for old trained models when the epoch is actually 1000. This causes issues because
