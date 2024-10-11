@@ -109,7 +109,11 @@ class NetworkTrainer(object):
         self.all_tr_losses = []
         self.all_val_losses = []
         self.all_val_losses_tr_mode = []
-        self.all_val_eval_metrics = []  # does not have to be used
+        self.all_val_eval_metrics = []    # does not have to be used
+        self.all_val_eval_metrics_C1 = []
+        self.all_val_eval_metrics_C2 = []
+        self.all_val_eval_metrics_C3 = []
+        self.all_val_eval_metrics_C4 = []  
         self.epoch = 0
         self.log_file = None
         self.deterministic = deterministic
@@ -296,7 +300,7 @@ class NetworkTrainer(object):
             'optimizer_state_dict': optimizer_state_dict,
             'lr_scheduler_state_dict': lr_sched_state_dct,
             'plot_stuff': (self.all_tr_losses, self.all_val_losses, self.all_val_losses_tr_mode,
-                        self.all_val_eval_metrics),
+                        self.all_val_eval_metrics, self.all_val_eval_metrics_C1, self.all_val_eval_metrics_C2, self.all_val_eval_metrics_C3, self.all_val_eval_metrics_C4),
             'best_stuff' : (self.best_epoch_based_on_MA_tr_loss, self.best_MA_tr_loss_for_patience, self.best_val_eval_criterion_MA)}
 
         if self.amp_grad_scaler is not None:
@@ -394,12 +398,18 @@ class NetworkTrainer(object):
             if issubclass(self.lr_scheduler.__class__, _LRScheduler):
                 self.lr_scheduler.step(self.epoch)
 
-        self.all_tr_losses, self.all_val_losses, self.all_val_losses_tr_mode, self.all_val_eval_metrics = checkpoint[
-            'plot_stuff']
+        self.all_tr_losses, \
+            self.all_val_losses, \
+            self.all_val_losses_tr_mode, \
+            self.all_val_eval_metrics, \
+            self.all_val_eval_metrics_C1, \
+            self.all_val_eval_metrics_C2, \
+            self.all_val_eval_metrics_C3, \
+            self.all_val_eval_metrics_C4 = checkpoint['plot_stuff']
 
         # load best loss (if present)
         if 'best_stuff' in checkpoint.keys():
-            self.best_epoch_based_on_MA_tr_loss, self.best_MA_tr_loss_for_patience, self.best_val_eval_criterion_MA = checkpoint[
+            self.best_epoch_based_on_MA_tr_loss, self.best_MA_tr_loss_for_patience, self.best_val_eval_criterion_MA = checkpoint[, self.all_val_eval_metrics
                 'best_stuff']
 
         # after the training is done, the epoch is incremented one more time in my old code. This results in
@@ -414,6 +424,10 @@ class NetworkTrainer(object):
             self.all_val_losses = self.all_val_losses[:self.epoch]
             self.all_val_losses_tr_mode = self.all_val_losses_tr_mode[:self.epoch]
             self.all_val_eval_metrics = self.all_val_eval_metrics[:self.epoch]
+            self.all_val_eval_metrics_C1 = self.all_val_eval_metrics_C1[:self.epoch]
+            self.all_val_eval_metrics_C2 = self.all_val_eval_metrics_C2[:self.epoch]
+            self.all_val_eval_metrics_C3 = self.all_val_eval_metrics_C3[:self.epoch]
+            self.all_val_eval_metrics_C4 = self.all_val_eval_metrics_C4[:self.epoch]
 
         self._maybe_init_amp()
 
@@ -473,6 +487,10 @@ class NetworkTrainer(object):
             this_ave_train_loss = None
             this_ave_val_loss = None
             this_val_eval_metrics = None
+            this_val_eval_metrics_C1 = None
+            this_val_eval_metrics_C2 = None
+            this_val_eval_metrics_C3 = None
+            this_val_eval_metrics_C4 = None
 
             # train one epoch
             self.network.train()
@@ -547,8 +565,16 @@ class NetworkTrainer(object):
              # pulling off val results if validated but didn't train (global val) so won't go into checkpoint
             if val_epoch:
                 this_val_eval_metrics = self.all_val_eval_metrics[-1]
+                this_val_eval_metrics_C1 = self.all_val_eval_metrics_C1[-1]
+                this_val_eval_metrics_C2 = self.all_val_eval_metrics_C2[-1]
+                this_val_eval_metrics_C3 = self.all_val_eval_metrics_C3[-1]
+                this_val_eval_metrics_C4 = self.all_val_eval_metrics_C4[-1]
                 if not train_epoch:
                     self.all_val_eval_metrics = self.all_val_eval_metrics[:-1]
+                    self.all_val_eval_metrics_C1 = self.all_val_eval_metrics_C1[:-1]
+                    self.all_val_eval_metrics_C2 = self.all_val_eval_metrics_C2[:-1]
+                    self.all_val_eval_metrics_C3 = self.all_val_eval_metrics_C3[:-1]
+                    self.all_val_eval_metrics_C4 = self.all_val_eval_metrics_C4[:-1]
 
             epoch_end_time = time()
 
@@ -567,7 +593,15 @@ class NetworkTrainer(object):
         if isfile(join(self.output_folder, "model_latest.model.pkl")):
             os.remove(join(self.output_folder, "model_latest.model.pkl"))
 
-        return batches_applied_train, batches_applied_val, this_ave_train_loss, this_ave_val_loss, this_val_eval_metrics
+        return batches_applied_train, \
+                 batches_applied_val, \
+                 this_ave_train_loss, \
+                 this_ave_val_loss, \
+                 this_val_eval_metrics, \
+                 this_val_eval_metrics_C1, \
+                 this_val_eval_metrics_C2, \
+                 this_val_eval_metrics_C3, \
+                 this_val_eval_metrics_C4
 
     def maybe_update_lr(self):
         # maybe update learning rate
