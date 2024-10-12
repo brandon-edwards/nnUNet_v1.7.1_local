@@ -398,14 +398,27 @@ class NetworkTrainer(object):
             if issubclass(self.lr_scheduler.__class__, _LRScheduler):
                 self.lr_scheduler.step(self.epoch)
 
-        self.all_tr_losses, \
-            self.all_val_losses, \
-            self.all_val_losses_tr_mode, \
-            self.all_val_eval_metrics, \
-            self.all_val_eval_metrics_C1, \
-            self.all_val_eval_metrics_C2, \
-            self.all_val_eval_metrics_C3, \
-            self.all_val_eval_metrics_C4 = checkpoint['plot_stuff']
+        # TODO: Curently accounting for starting checkpoint that did not have the additional four all_val_eval_metrics provided below (future ones will)
+        if len(checkpoint['plot_stuff']) == 4:
+            self.all_tr_losses, \
+                self.all_val_losses, \
+                self.all_val_losses_tr_mode, \
+                self.all_val_eval_metrics = checkpoint['plot_stuff']
+            self.all_val_eval_metrics_C1 = [0.0]
+            self.all_val_eval_metrics_C2 = [0.0]
+            self.all_val_eval_metrics_C3 = [0.0]
+            self.all_val_eval_metrics_C4 = [0.0]
+
+        else:
+
+            self.all_tr_losses, \
+                self.all_val_losses, \
+                self.all_val_losses_tr_mode, \
+                self.all_val_eval_metrics, \
+                self.all_val_eval_metrics_C1, \
+                self.all_val_eval_metrics_C2, \
+                self.all_val_eval_metrics_C3, \
+                self.all_val_eval_metrics_C4 = checkpoint['plot_stuff']
 
         # load best loss (if present)
         if 'best_stuff' in checkpoint.keys():
