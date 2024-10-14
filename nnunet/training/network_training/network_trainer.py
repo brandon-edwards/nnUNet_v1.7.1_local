@@ -194,16 +194,12 @@ class NetworkTrainer(object):
         :return:
         """
 
-        # print(f"Brandon DEBUG, potential plot across epochs {list(range(self.epoch + 1))} and all_tr_losses:{self.all_tr_losses} and all_val_losses:{self.all_val_losses} and all_val_eval_metrics:{self.all_val_eval_metrics}")
-
-
         # dissabling the logic for intermediate stages where validation has one more result present (global) than training
         # therefore this progress plots will only occur at the point where checkpoint is filled with most recent train and local val
         # results. Global val will never appear in these plots.
 
         if (self.epoch + 1 == len(self.all_tr_losses)) and (self.epoch + 1 == len(self.all_val_eval_metrics)) and (self.epoch + 1 == len(self.all_val_losses)):
-            # print(f"Brandon DEBUG - Satisfied length equality in self.all_tr_losses, self.all_val_eval_metrics, self.all_val_losses, and list(range(self.epoch + 1)) with value:{self.epoch+1}")
-
+            
             try:
                 font = {'weight': 'normal',
                         'size': 18}
@@ -487,8 +483,6 @@ class NetworkTrainer(object):
         #initializing batches applited to training and val
         batches_applied_train = 0
         batches_applied_val = 0
-
-        # print(f"Brandon DEBUG - starting train/val loop with self.epoch: {self.epoch} and self.max_num_epochs: {self.max_num_epochs}")
 
         # Changed below to run always one epoch 
         if True: # previously was if current epoch is less than total epochs
