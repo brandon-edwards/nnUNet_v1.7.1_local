@@ -291,7 +291,7 @@ class NetworkTrainer(object):
             this_epoch = self.epoch
 
         save_this = {
-            'epoch': self.epoch,
+            'epoch': this_epoch,
             'state_dict': state_dict,
             'optimizer_state_dict': optimizer_state_dict,
             'lr_scheduler_state_dict': lr_sched_state_dct,
