@@ -125,10 +125,11 @@ class NetworkTrainer(object):
         ################# Settings for saving checkpoints ##################################
         self.save_every = 50
         self.save_latest_only = True  # if false it will not store/overwrite _latest but separate files each
-        # time an intermediate checkpoint is created
-        self.save_intermediate_checkpoints = True  # whether or not to save checkpoint_latest
-        self.save_best_checkpoint = True  # whether or not to save the best checkpoint according to self.best_val_eval_criterion_MA
-        self.save_final_checkpoint = True  # whether or not to save the final checkpoint
+        
+        # we no longer save any checkpoints
+        self.save_intermediate_checkpoints = False  # whether or not to save checkpoint_latest
+        self.save_best_checkpoint = False  # whether or not to save the best checkpoint according to self.best_val_eval_criterion_MA
+        self.save_final_checkpoint = False  # whether or not to save the final checkpoint
 
     @abstractmethod
     def initialize(self, training=True):
@@ -193,7 +194,10 @@ class NetworkTrainer(object):
         Should probably by improved
         :return:
         """
-
+        # skip this logic
+        pass
+        
+        """
         # dissabling the logic for intermediate stages where validation has one more result present (global) than training
         # therefore this progress plots will only occur at the point where checkpoint is filled with most recent train and local val
         # results. Global val will never appear in these plots.
@@ -232,6 +236,7 @@ class NetworkTrainer(object):
                 plt.close()
             except IOError:
                 self.print_to_log_file("failed to plot: ", sys.exc_info())
+        """
 
     def print_to_log_file(self, *args, also_print_to_console=True, add_timestamp=True):
 
@@ -275,6 +280,7 @@ class NetworkTrainer(object):
         lr_sched_state_dct = None
         if self.lr_scheduler is not None and hasattr(self.lr_scheduler,
                                                      'state_dict'):  # not isinstance(self.lr_scheduler, lr_scheduler.ReduceLROnPlateau):
+            raise ValueError(f"PostOpp Fed will not be using a learning rate scheduler")
             lr_sched_state_dct = self.lr_scheduler.state_dict()
             # WTF is this!?
             # for key in lr_sched_state_dct.keys():
@@ -451,7 +457,7 @@ class NetworkTrainer(object):
         """
         pass
 
-    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch, plot_architecture=False):
         # train_cutoff and val_cutoff are given in seconds, at the begining of train and val batch iteration
         # respecively a time check is made against this cutoff to determine whether the loop will be exited early
         # val_epoch is a boolean that indicates a validation scenario
@@ -469,8 +475,9 @@ class NetworkTrainer(object):
 
         self._maybe_init_amp()
 
-        maybe_mkdir_p(self.output_folder)        
-        self.plot_network_architecture()
+        maybe_mkdir_p(self.output_folder)
+        if plot_architecture:        
+            self.plot_network_architecture()
 
         if cudnn.benchmark and cudnn.deterministic:
             warn("torch.backends.cudnn.deterministic is True indicating a deterministic training is desired. "
@@ -490,13 +497,13 @@ class NetworkTrainer(object):
             epoch_start_time = time()
             train_loop_start_time = time()
             train_losses_epoch = []
-            this_ave_train_loss = None
-            this_ave_val_loss = None
-            this_val_eval_metrics = None
-            this_val_eval_metrics_C1 = None
-            this_val_eval_metrics_C2 = None
-            this_val_eval_metrics_C3 = None
-            this_val_eval_metrics_C4 = None
+            single_ave_train_loss = None
+            single_ave_val_loss = None
+            single_val_eval_metrics = None
+            single_val_eval_metrics_C1 = None
+            single_val_eval_metrics_C2 = None
+            single_val_eval_metrics_C3 = None
+            single_val_eval_metrics_C4 = None
 
             # train one epoch
             self.network.train()
@@ -529,7 +536,7 @@ class NetworkTrainer(object):
             if len(train_losses_epoch) > 0:        
                 self.all_tr_losses.append(np.mean(train_losses_epoch))
                 self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
-                this_ave_train_loss = self.all_tr_losses[-1]
+                single_ave_train_loss = self.all_tr_losses[-1]
 
             val_loop_start_time = time()
             with torch.no_grad():
@@ -546,10 +553,10 @@ class NetworkTrainer(object):
                     val_losses.append(l)
                     batches_applied_val += 1
                 if len(val_losses) > 0:  
-                    this_ave_val_loss = np.mean(val_losses)
+                    single_ave_val_loss = np.mean(val_losses)
                     if train_epoch:
-                        self.all_val_losses.append(this_ave_val_loss)
-                    self.print_to_log_file("validation loss: %.4f" % this_ave_val_loss)
+                        self.all_val_losses.append(single_ave_val_loss)
+                    self.print_to_log_file("validation loss: %.4f" % single_ave_val_loss)
 
                 if self.also_val_in_tr_mode:
                     raise ValueError(f"PostOpp experiment (for which this module is exclusively patched) not currently supporting also_val_in_tr_mode.")
@@ -568,19 +575,13 @@ class NetworkTrainer(object):
             # We don't use continue_training, as this is not a loop any more
             continue_training = self.on_epoch_end(val_epoch=val_epoch, train_epoch=train_epoch)
 
-             # pulling off val results if validated but didn't train (global val) so won't go into checkpoint
+             # pulling off val results if validated
             if val_epoch:
-                this_val_eval_metrics = self.all_val_eval_metrics[-1]
-                this_val_eval_metrics_C1 = self.all_val_eval_metrics_C1[-1]
-                this_val_eval_metrics_C2 = self.all_val_eval_metrics_C2[-1]
-                this_val_eval_metrics_C3 = self.all_val_eval_metrics_C3[-1]
-                this_val_eval_metrics_C4 = self.all_val_eval_metrics_C4[-1]
-                if not train_epoch:
-                    self.all_val_eval_metrics = self.all_val_eval_metrics[:-1]
-                    self.all_val_eval_metrics_C1 = self.all_val_eval_metrics_C1[:-1]
-                    self.all_val_eval_metrics_C2 = self.all_val_eval_metrics_C2[:-1]
-                    self.all_val_eval_metrics_C3 = self.all_val_eval_metrics_C3[:-1]
-                    self.all_val_eval_metrics_C4 = self.all_val_eval_metrics_C4[:-1]
+                single_val_eval_metrics = self.all_val_eval_metrics[-1]
+                single_val_eval_metrics_C1 = self.all_val_eval_metrics_C1[-1]
+                single_val_eval_metrics_C2 = self.all_val_eval_metrics_C2[-1]
+                single_val_eval_metrics_C3 = self.all_val_eval_metrics_C3[-1]
+                single_val_eval_metrics_C4 = self.all_val_eval_metrics_C4[-1]
 
             epoch_end_time = time()
 
@@ -592,22 +593,18 @@ class NetworkTrainer(object):
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
+        # we no longer save the checkpoint (always return all of what we need to the aggregator, saving nothing in the checkpoints)
         if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), train_epoch=train_epoch)
-        # now we can delete latest as it will be identical with final
-        if isfile(join(self.output_folder, "model_latest.model")):
-            os.remove(join(self.output_folder, "model_latest.model"))
-        if isfile(join(self.output_folder, "model_latest.model.pkl")):
-            os.remove(join(self.output_folder, "model_latest.model.pkl"))
 
         return batches_applied_train, \
                  batches_applied_val, \
-                 this_ave_train_loss, \
-                 this_ave_val_loss, \
-                 this_val_eval_metrics, \
-                 this_val_eval_metrics_C1, \
-                 this_val_eval_metrics_C2, \
-                 this_val_eval_metrics_C3, \
-                 this_val_eval_metrics_C4
+                 single_ave_train_loss, \
+                 single_ave_val_loss, \
+                 single_val_eval_metrics, \
+                 single_val_eval_metrics_C1, \
+                 single_val_eval_metrics_C2, \
+                 single_val_eval_metrics_C3, \
+                 single_val_eval_metrics_C4
 
     def maybe_update_lr(self):
         # maybe update learning rate
