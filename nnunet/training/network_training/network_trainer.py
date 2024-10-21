@@ -464,6 +464,8 @@ class NetworkTrainer(object):
         # train_epoch is a boolean that indicates training happening too
         # when trian epoch is true, we will record val in checkpoint, not otherwise (primarily motivated by
         # wanting one validation list in checkpoint - following NNUnet code to avoid conflicts)
+        self.print_to_log_file(f"Entering NNUnet train/val function with:\ntrain_cutoff:{train_cutoff}\nval_cutoff:{val_cutoff}\ntrain_epoch:{train_epoch}\nval_epoch:{val_epoch}\nepoch:{self.epoch}\nmax_num_epochs:{self.max_num_epochs}\n")
+
         if not torch.cuda.is_available():
             self.print_to_log_file("WARNING!!! You are attempting to run training on a CPU (torch.cuda.is_available() is False). This can be VERY slow!")
 
