@@ -588,7 +588,6 @@ class NetworkTrainer(object):
 
             self.print_to_log_file("This epoch took %f s\n" % (epoch_end_time - epoch_start_time))
 
-        # we no longer save the checkpoint (always return all of what we need to the aggregator, saving nothing in the checkpoints)
         if self.save_final_checkpoint: self.save_checkpoint(join(self.output_folder, "model_final_checkpoint.model"), train_epoch=train_epoch)
 
         return batches_applied_train, \
