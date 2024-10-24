@@ -708,7 +708,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.online_eval_tp = np.sum(self.online_eval_tp, 0)
         self.online_eval_fp = np.sum(self.online_eval_fp, 0)
         self.online_eval_fn = np.sum(self.online_eval_fn, 0)
-
+        print(f"\nBrandon DEBUG - tp:{self.online_eval_tp}, fp:{self.online_eval_fp}, fn:{self.online_eval_fn}\n")
         global_dc_per_class = [i for i in [2 * i / (2 * i + j + k) for i, j, k in
                                            zip(self.online_eval_tp, self.online_eval_fp, self.online_eval_fn)]
                                if not np.isnan(i)]
