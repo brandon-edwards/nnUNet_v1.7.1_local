@@ -313,9 +313,9 @@ class nnUNetTrainer(NetworkTrainer):
 
         shutil.copy(self.plans_file, join(self.output_folder_base, "plans.pkl"))
 
-    def run_training(self):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch):
         self.save_debug_information()
-        super(nnUNetTrainer, self).run_training()
+        return super(nnUNetTrainer, self).run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, train_epoch=train_epoch)
 
     def load_plans_file(self):
         """
@@ -709,10 +709,14 @@ class nnUNetTrainer(NetworkTrainer):
         self.online_eval_fp = np.sum(self.online_eval_fp, 0)
         self.online_eval_fn = np.sum(self.online_eval_fn, 0)
 
-        global_dc_per_class = [i for i in [2 * i / (2 * i + j + k) for i, j, k in
-                                           zip(self.online_eval_tp, self.online_eval_fp, self.online_eval_fn)]
-                               if not np.isnan(i)]
+        global_dc_per_class = [i if not np.isnan(i) else 1.0 for i in \
+          [2 * i / (2 * i + j + k) for i, j, k in zip(self.online_eval_tp, self.online_eval_fp, self.online_eval_fn)]]
+
         self.all_val_eval_metrics.append(np.mean(global_dc_per_class))
+        self.all_val_eval_metrics_C1.append(global_dc_per_class[0])
+        self.all_val_eval_metrics_C2.append(global_dc_per_class[1])
+        self.all_val_eval_metrics_C3.append(global_dc_per_class[2])
+        self.all_val_eval_metrics_C4.append(global_dc_per_class[3])
 
         self.print_to_log_file("Average global foreground Dice:", [np.round(i, 4) for i in global_dc_per_class])
         self.print_to_log_file("(interpret this as an estimate for the Dice of the different classes. This is not "
@@ -723,8 +727,8 @@ class nnUNetTrainer(NetworkTrainer):
         self.online_eval_fp = []
         self.online_eval_fn = []
 
-    def save_checkpoint(self, fname, save_optimizer=True):
-        super(nnUNetTrainer, self).save_checkpoint(fname, save_optimizer)
+    def save_checkpoint(self, fname, save_optimizer=True, train_epoch=True):
+        super(nnUNetTrainer, self).save_checkpoint(fname, save_optimizer=save_optimizer, train_epoch=train_epoch)
         info = OrderedDict()
         info['init'] = self.init_args
         info['name'] = self.__class__.__name__

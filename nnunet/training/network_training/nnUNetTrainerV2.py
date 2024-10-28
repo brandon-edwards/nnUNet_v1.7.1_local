@@ -41,11 +41,13 @@ class nnUNetTrainerV2(nnUNetTrainer):
     Info for Fabian: same as internal nnUNetTrainerV2_2
     """
 
-    def __init__(self, plans_file, fold, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
+    def __init__(self, plans_file, fold, actual_max_num_epochs, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
                  unpack_data=True, deterministic=True, fp16=False):
         super().__init__(plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
                          deterministic, fp16)
-        self.max_num_epochs = 1000
+        self.actual_max_num_epochs = actual_max_num_epochs
+        # below ensures we don't sue this attribute for epoch comparisons without intentionally setting it
+        self.max_num_epochs = None
         self.initial_lr = 1e-2
         self.deep_supervision_scales = None
         self.ds_loss_weights = None
@@ -402,15 +404,15 @@ class nnUNetTrainerV2(nnUNetTrainer):
             ep = self.epoch + 1
         else:
             ep = epoch
-        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, 1000.0, self.initial_lr, 0.9)
+        self.optimizer.param_groups[0]['lr'] = poly_lr(ep, self.actual_max_num_epochs, self.initial_lr, 0.9)
         self.print_to_log_file("lr:", np.round(self.optimizer.param_groups[0]['lr'], decimals=6))
 
-    def on_epoch_end(self):
+    def on_epoch_end(self, val_epoch, train_epoch):
         """
         overwrite patient-based early stopping. Always run to 1000 epochs
         :return:
         """
-        super().on_epoch_end()
+        super().on_epoch_end(val_epoch=val_epoch, train_epoch=train_epoch)
         continue_training = self.epoch < self.max_num_epochs
 
         # it can rarely happen that the momentum of nnUNetTrainerV2 is too high for some dataset. If at epoch 100 the
@@ -425,7 +427,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
                                        "0.95 and network weights have been reinitialized")
         return continue_training
 
-    def run_training(self):
+    def run_training(self, train_cutoff, val_cutoff, val_epoch, train_epoch):
         """
         if we run with -c then we need to set the correct lr for the first epoch, otherwise it will run the first
         continued epoch with self.initial_lr
@@ -437,6 +439,6 @@ class nnUNetTrainerV2(nnUNetTrainer):
         # want at the start of the training
         ds = self.network.do_ds
         self.network.do_ds = True
-        ret = super().run_training()
+        ret = super().run_training(train_cutoff=train_cutoff, val_cutoff=val_cutoff, val_epoch=val_epoch, train_epoch=train_epoch)
         self.network.do_ds = ds
         return ret
