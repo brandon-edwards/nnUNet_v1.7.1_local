@@ -708,8 +708,6 @@ class NetworkTrainer(object):
 
         self.plot_progress()
 
-        if train_epoch:
-            self.maybe_update_lr()
         # this is not the final checkpoint saving, so no need to watch out for an epoch increase in the val case for PostOpp federation
         self.maybe_save_checkpoint()
 
