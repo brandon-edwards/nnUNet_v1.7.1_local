@@ -87,7 +87,37 @@ def restore_model(pkl_file, checkpoint=None, train=False, fp16=None):
 
     # ToDo Fabian make saves use kwargs, please...
 
-    trainer = tr(*init)
+    # Brandon manually inserting a missing 'actual_max_num_epochs' into the init that seems to be missing
+    # also inserting some checks on data types to make more certain that I know what I'm working with
+    # my guess
+    plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data, deterministic, fp16 = init
+
+    #validation of type
+    assert isinstance(plans_file, str)
+    assert isinstance(fold, int)
+    assert isinstance(output_folder, str)
+    assert isinstance(dataset_directory, str)
+    assert isinstance(batch_dice, bool)
+    assert isinstance(stage, int)
+    assert isinstance(unpack_data, bool)
+    assert isinstance(deterministic, bool)
+    assert isinstance(fp16, bool)
+
+    kwargs = {'plans_file': plans_file, 
+              'fold': fold,
+              'actual_max_num_epochs': 1000,
+              'output_folder': output_folder, 
+              'dataset_directory': dataset_directory, 
+              'batch_dice': batch_dice, 
+              'stage': stage, 
+              'unpack_data': unpack_data, 
+              'deterministic': deterministic, 
+              'fp16': fp16}
+
+
+    print(f"Brandon DEBUG - initializing trainer with init:\n\n{kwargs}\n\n")
+    
+    trainer = tr(**kwargs)
 
     # We can hack fp16 overwriting into the trainer without changing the init arguments because nothing happens with
     # fp16 in the init, it just saves it to a member variable
@@ -144,7 +174,7 @@ def load_model_and_checkpoint_files(folder, folds=None, mixed_precision=None, ch
     trainer.initialize(False)
     all_best_model_files = [join(i, "%s.model" % checkpoint_name) for i in folds]
     print("using the following model files: ", all_best_model_files)
-    all_params = [torch.load(i, map_location=torch.device('cpu')) for i in all_best_model_files]
+    all_params = [torch.load(i, map_location=torch.device('cpu'), weights_only=False) for i in all_best_model_files]
     return trainer, all_params
 
 
